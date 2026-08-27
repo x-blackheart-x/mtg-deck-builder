@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTG Commander Deck Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <h1>⚔️ MTG Commander Deck Builder</h1>
+      <div class="commander-bar">
+        <input type="text" id="commanderInput" placeholder="Set your Commander..." autocomplete="off" />
+        <button id="commanderBtn">Set Commander</button>
+      </div>
+    </div>
+    <div id="commanderDisplay" class="commander-display hidden">
+      <img id="commanderThumb" src="" alt="Commander" />
+      <div class="commander-info">
+        <span id="commanderName" class="commander-name"></span>
+        <div id="commanderColors" class="commander-colors"></div>
+      </div>
+      <button id="clearCommanderBtn" class="btn-ghost" title="Remove commander">✕</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Search Panel -->
+    <section class="search-panel">
+
+      <!-- ── Basic search bar ── -->
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Card name or any text..." autocomplete="off" />
+        <button id="advToggleBtn" class="btn-secondary" title="Advanced Search">⚙ Filters</button>
+        <button id="searchBtn">Search</button>
+      </div>
+
+      <!-- ── Advanced Search Panel ── -->
+      <div id="advPanel" class="adv-panel hidden">
+        <div class="adv-grid">
+
+          <!-- Colors -->
+          <div class="adv-group">
+            <label class="adv-label">Colors</label>
+            <div class="adv-color-row">
+              <label class="color-toggle" title="White">
+                <input type="checkbox" data-color="W" />
+                <span class="color-btn color-w">W</span>
+              </label>
+              <label class="color-toggle" title="Blue">
+                <input type="checkbox" data-color="U" />
+                <span class="color-btn color-u">U</span>
+              </label>
+              <label class="color-toggle" title="Black">
+                <input type="checkbox" data-color="B" />
+                <span class="color-btn color-b">B</span>
+              </label>
+              <label class="color-toggle" title="Red">
+                <input type="checkbox" data-color="R" />
+                <span class="color-btn color-r">R</span>
+              </label>
+              <label class="color-toggle" title="Green">
+                <input type="checkbox" data-color="G" />
+                <span class="color-btn color-g">G</span>
+              </label>
+              <label class="color-toggle" title="Colorless">
+                <input type="checkbox" data-color="C" />
+                <span class="color-btn color-c">C</span>
+              </label>
+            </div>
+            <select id="colorMode" class="adv-select">
+              <option value="exactly">Exactly these colors</option>
+              <option value="including">Including these colors</option>
+              <option value="atmost">At most these colors</option>
+            </select>
+          </div>
+
+          <!-- Color Identity (Commander) -->
+          <div class="adv-group">
+            <label class="adv-label">Color Identity</label>
+            <div class="adv-color-row">
+              <label class="color-toggle" title="White">
+                <input type="checkbox" data-identity="W" />
+                <span class="color-btn color-w">W</span>
+              </label>
+              <label class="color-toggle" title="Blue">
+                <input type="checkbox" data-identity="U" />
+                <span class="color-btn color-u">U</span>
+              </label>
+              <label class="color-toggle" title="Black">
+                <input type="checkbox" data-identity="B" />
+                <span class="color-btn color-b">B</span>
+              </label>
+              <label class="color-toggle" title="Red">
+                <input type="checkbox" data-identity="R" />
+                <span class="color-btn color-r">R</span>
+              </label>
+              <label class="color-toggle" title="Green">
+                <input type="checkbox" data-identity="G" />
+                <span class="color-btn color-g">G</span>
+              </label>
+              <label class="color-toggle" title="Colorless">
+                <input type="checkbox" data-identity="C" />
+                <span class="color-btn color-c">C</span>
+              </label>
+            </div>
+            <select id="identityMode" class="adv-select">
+              <option value="exactly">Exactly this identity</option>
+              <option value="within" selected>Within this identity (≤)</option>
+              <option value="including">Including these colors (≥)</option>
+            </select>
+          </div>
+
+          <!-- Card Types -->
+          <div class="adv-group">
+            <label class="adv-label">Type</label>
+            <div class="adv-type-row">
+              <label><input type="checkbox" data-type="Creature" /> Creature</label>
+              <label><input type="checkbox" data-type="Instant" /> Instant</label>
+              <label><input type="checkbox" data-type="Sorcery" /> Sorcery</label>
+              <label><input type="checkbox" data-type="Enchantment" /> Enchantment</label>
+              <label><input type="checkbox" data-type="Artifact" /> Artifact</label>
+              <label><input type="checkbox" data-type="Planeswalker" /> Planeswalker</label>
+              <label><input type="checkbox" data-type="Land" /> Land</label>
+              <label><input type="checkbox" data-type="Legendary" /> Legendary</label>
+            </div>
+            <input type="text" id="typeExtra" class="adv-input" placeholder="Subtype (e.g. Elf, Dragon)" />
+          </div>
+
+          <!-- Rarity -->
+          <div class="adv-group">
+            <label class="adv-label">Rarity</label>
+            <div class="adv-type-row">
+              <label><input type="checkbox" data-rarity="common" />    Common</label>
+              <label><input type="checkbox" data-rarity="uncommon" />  Uncommon</label>
+              <label><input type="checkbox" data-rarity="rare" />      Rare</label>
+              <label><input type="checkbox" data-rarity="mythic" />    Mythic</label>
+            </div>
+          </div>
+
+          <!-- Mana Value (CMC) -->
+          <div class="adv-group">
+            <label class="adv-label">Mana Value (CMC)</label>
+            <div class="adv-range-row">
+              <select id="cmcOp" class="adv-select-sm">
+                <option value="">Any</option>
+                <option value="=">=</option>
+                <option value="<">&lt;</option>
+                <option value="<=">&lt;=</option>
+                <option value=">">&gt;</option>
+                <option value=">=">&gt;=</option>
+              </select>
+              <input type="number" id="cmcVal" class="adv-input-sm" placeholder="e.g. 4" min="0" max="20" />
+            </div>
+          </div>
+
+          <!-- Power -->
+          <div class="adv-group">
+            <label class="adv-label">Power</label>
+            <div class="adv-range-row">
+              <select id="powOp" class="adv-select-sm">
+                <option value="">Any</option>
+                <option value="=">=</option>
+                <option value="<">&lt;</option>
+                <option value="<=">&lt;=</option>
+                <option value=">">&gt;</option>
+                <option value=">=">&gt;=</option>
+              </select>
+              <input type="number" id="powVal" class="adv-input-sm" placeholder="e.g. 3" min="0" max="20" />
+            </div>
+          </div>
+
+          <!-- Toughness -->
+          <div class="adv-group">
+            <label class="adv-label">Toughness</label>
+            <div class="adv-range-row">
+              <select id="touOp" class="adv-select-sm">
+                <option value="">Any</option>
+                <option value="=">=</option>
+                <option value="<">&lt;</option>
+                <option value="<=">&lt;=</option>
+                <option value=">">&gt;</option>
+                <option value=">=">&gt;=</option>
+              </select>
+              <input type="number" id="touVal" class="adv-input-sm" placeholder="e.g. 3" min="0" max="20" />
+            </div>
+          </div>
+
+          <!-- Oracle Text -->
+          <div class="adv-group adv-group--wide">
+            <label class="adv-label">Oracle Text contains</label>
+            <input type="text" id="oracleText" class="adv-input" placeholder='e.g. "flying" or "draw a card"' />
+          </div>
+
+          <!-- Keywords -->
+          <div class="adv-group adv-group--wide">
+            <label class="adv-label">Keywords</label>
+            <div class="adv-keyword-row">
+              <label><input type="checkbox" data-kw="Flying" />     Flying</label>
+              <label><input type="checkbox" data-kw="First strike" /> First Strike</label>
+              <label><input type="checkbox" data-kw="Double strike" /> Double Strike</label>
+              <label><input type="checkbox" data-kw="Deathtouch" /> Deathtouch</label>
+              <label><input type="checkbox" data-kw="Haste" />      Haste</label>
+              <label><input type="checkbox" data-kw="Hexproof" />   Hexproof</label>
+              <label><input type="checkbox" data-kw="Indestructible" /> Indestructible</label>
+              <label><input type="checkbox" data-kw="Lifelink" />   Lifelink</label>
+              <label><input type="checkbox" data-kw="Menace" />     Menace</label>
+              <label><input type="checkbox" data-kw="Reach" />      Reach</label>
+              <label><input type="checkbox" data-kw="Trample" />    Trample</label>
+              <label><input type="checkbox" data-kw="Vigilance" />  Vigilance</label>
+              <label><input type="checkbox" data-kw="Ward" />       Ward</label>
+              <label><input type="checkbox" data-kw="Flash" />      Flash</label>
+              <label><input type="checkbox" data-kw="Defender" />   Defender</label>
+              <label><input type="checkbox" data-kw="Shroud" />     Shroud</label>
+            </div>
+          </div>
+
+          <!-- Format Legality -->
+          <div class="adv-group">
+            <label class="adv-label">Legal in Format</label>
+            <select id="legalFormat" class="adv-select">
+              <option value="">Any</option>
+              <option value="commander" selected>Commander</option>
+              <option value="standard">Standard</option>
+              <option value="pioneer">Pioneer</option>
+              <option value="modern">Modern</option>
+              <option value="legacy">Legacy</option>
+              <option value="vintage">Vintage</option>
+              <option value="pauper">Pauper</option>
+              <option value="oathbreaker">Oathbreaker</option>
+            </select>
+          </div>
+
+          <!-- Set -->
+          <div class="adv-group">
+            <label class="adv-label">Set Code</label>
+            <input type="text" id="setCode" class="adv-input" placeholder="e.g. mkm, dsk, otj" maxlength="10" />
+          </div>
+
+          <!-- Sort -->
+          <div class="adv-group">
+            <label class="adv-label">Sort By</label>
+            <select id="sortOrder" class="adv-select">
+              <option value="name">Name</option>
+              <option value="cmc">Mana Value</option>
+              <option value="color">Color</option>
+              <option value="power">Power</option>
+              <option value="toughness">Toughness</option>
+              <option value="released">Release Date</option>
+              <option value="rarity">Rarity</option>
+            </select>
+          </div>
+
+          <!-- Direction -->
+          <div class="adv-group">
+            <label class="adv-label">Direction</label>
+            <select id="sortDir" class="adv-select">
+              <option value="auto">Auto</option>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+
+        </div><!-- /adv-grid -->
+
+        <!-- Built query preview -->
+        <div class="adv-query-preview">
+          <span class="adv-label">Query:</span>
+          <code id="queryPreview">—</code>
+        </div>
+
+        <div class="adv-footer">
+          <button id="advClearBtn" class="btn-secondary">Clear Filters</button>
+        </div>
+
+      </div><!-- /advPanel -->
+
+      <!-- Search Results -->
+      <div id="resultsContainer" class="results-container hidden">
+        <div class="results-header">
+          <h2>Results</h2>
+          <span id="resultsMeta" class="results-meta"></span>
+        </div>
+        <div id="resultsList" class="results-list"></div>
+        <div id="loadMoreRow" class="load-more-row hidden">
+          <button id="loadMoreBtn" class="btn-secondary">Load more results</button>
+        </div>
+      </div>
+
+      <!-- Card Detail Preview -->
+      <div id="cardDetail" class="card-detail">
+        <!-- Barra de ações fixa no topo -->
+        <div class="card-detail-toolbar">
+          <div class="add-controls">
+            <label for="qtyInput">Qty:</label>
+            <input type="number" id="qtyInput" value="1" min="1" max="99" />
+            <button id="addToDeckBtn">+ Add</button>
+          </div>
+          <div class="toolbar-prints">
+            <button id="printingsBtn" class="btn-secondary">🖼</button>
+            <button id="filteredPrintingsBtn" class="btn-secondary">🔍</button>
+          </div>
+        </div>
+        <div class="card-detail-inner">
+          <div id="colorWarning" class="color-warning hidden"></div>
+          <div class="card-detail-image">
+            <img id="detailImage" src="" alt="Card image" />
+            <button id="detailFlipBtn" class="detail-flip-btn hidden">⟳ Flip</button>
+          </div>
+          <div class="card-detail-info">
+            <h2 id="detailName"></h2>
+            <div id="detailColorPips" class="color-pips"></div>
+            <p class="detail-line"><span class="label">Mana Cost:</span> <span id="detailMana"></span></p>
+            <p class="detail-line"><span class="label">Type:</span> <span id="detailType"></span></p>
+            <p class="detail-line"><span class="label">Set:</span> <span id="detailSet"></span></p>
+            <p class="detail-line"><span class="label">Rarity:</span> <span id="detailRarity"></span></p>
+            <div class="oracle-box">
+              <p class="label">Oracle Text:</p>
+              <p id="detailOracle"></p>
+            </div>
+            <p class="detail-line" id="detailPTLine"><span class="label">P/T:</span> <span id="detailPT"></span></p>
+            <p class="detail-line" id="detailPriceLine">
+              <span class="label">Menor preço:</span>
+              <span id="detailPrice" class="detail-price">—</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deck List Panel -->
+    <section class="deck-panel">
+      <div class="deck-panel-header">
+        <div class="deck-header">
+          <h2>Deck List</h2>
+          <span id="deckCount" class="deck-count">0 / 99</span>
+        </div>
+        <div class="deck-actions">
+          <button id="saveDbBtn">☁ Salvar</button>
+          <button id="loadDbBtn" class="btn-secondary">📂 Meus Decks</button>
+          <button id="exportBtn" class="btn-secondary">Export</button>
+          <button id="clearBtn" class="danger">Limpar</button>
+        </div>
+      </div>
+
+      <div class="deck-panel-body">
+        <div id="deckValueRow" class="deck-value-row hidden">
+          <span class="land-label">💰 Valor estimado</span>
+          <span id="deckTotalValue" class="deck-total-value">R$ 0,00</span>
+          <button id="refreshPricesBtn" class="btn-refresh-prices" title="Buscar preços atualizados">↻</button>
+        </div>
+
+        <div id="landAdvisor" class="land-advisor">
+          <div class="land-advisor-row">
+            <span class="land-label">🌲 Lands</span>
+            <span id="landCount" class="land-count">0 / 33</span>
+          </div>
+          <div class="land-bar-track">
+            <div id="landBar" class="land-bar" style="width:0%"></div>
+          </div>
+          <p id="landTip" class="land-tip">Add 33 lands for a balanced Commander deck.</p>
+        </div>
+
+        <div id="deckCategories"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toggle Card Preview Button -->
+  <button id="togglePreviewBtn" class="toggle-preview-btn hidden" title="Toggle card preview">👁</button>
+
+  <!-- Hover Tooltip -->
+  <div id="hoverTooltip" class="hover-tooltip hidden">
+    <img id="tooltipImg" src="" alt="Card preview" />
+  </div>
+
+  <!-- Export Modal -->
+  <div id="exportModal" class="modal hidden">
+    <div class="modal-box">
+      <h3>Export Deck</h3>
+      <textarea id="exportText" readonly></textarea>
+      <div class="modal-actions">
+        <button id="copyBtn">Copy to Clipboard</button>
+        <button id="closeModalBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Set as Commander prompt -->
+  <div id="commanderModal" class="modal hidden">
+    <div class="modal-box modal-box--sm">
+      <div class="cmd-modal-img-wrap">
+        <img id="cmdModalImg" src="" alt="" />
+      </div>
+      <h3 id="cmdModalTitle"></h3>
+      <p class="cmd-modal-text">This is the first card in your deck and it's a creature. Would you like to set it as your Commander?</p>
+      <div class="modal-actions">
+        <button id="cmdModalYes">⚔️ Set as Commander</button>
+        <button id="cmdModalNo" class="danger">Just add to deck</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printings Modal -->
+  <div id="printingsModal" class="modal hidden">
+    <div class="modal-box modal-box--printings">
+      <div class="printings-header">
+        <h3 id="printingsTitle">All Printings</h3>
+        <button id="closePrintingsBtn" class="btn-ghost">✕</button>
+      </div>
+      <p id="printingsCount" class="printings-count"></p>
+      <div id="printingsGrid" class="printings-grid"></div>
+    </div>
+  </div>
+
+  <!-- Save Deck Modal -->
+  <div id="saveDeckModal" class="modal hidden">
+    <div class="modal-box modal-box--sm">
+      <h3>☁ Salvar Deck</h3>
+      <div class="db-form">
+        <label class="db-label">Seu nome</label>
+        <input type="text" id="saveUserName" class="adv-input" placeholder="Ex: João" autocomplete="off" />
+        <label class="db-label">Nome do deck</label>
+        <input type="text" id="saveDeckName" class="adv-input" placeholder="Ex: Atraxa Superfriends" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button id="saveDeckConfirmBtn">Salvar</button>
+        <button id="saveDeckCancelBtn" class="btn-secondary">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Deck Modal -->
+  <div id="loadDeckModal" class="modal hidden">
+    <div class="modal-box modal-box--load">
+      <div class="printings-header">
+        <h3>📂 Meus Decks</h3>
+        <button id="closeLoadDeckBtn" class="btn-ghost">✕</button>
+      </div>
+      <div class="db-filter-row">
+        <input type="text" id="loadUserFilter" class="adv-input" placeholder="Filtrar por usuário..." autocomplete="off" />
+      </div>
+      <div id="deckListContainer" class="deck-list-container">
+        <span class="spinner"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discard Confirm Modal -->
+  <div id="discardModal" class="modal hidden">
+    <div class="modal-box modal-box--sm">
+      <h3>⚠ Deck com cartas</h3>
+      <p class="cmd-modal-text">Você tem um deck aberto. O que deseja fazer antes de carregar outro?</p>
+      <div class="modal-actions" style="justify-content:center; flex-wrap:wrap; gap:0.5rem">
+        <button id="discardSaveBtn">☁ Salvar e carregar</button>
+        <button id="discardDiscardBtn" class="btn-secondary">Descartar e carregar</button>
+        <button id="discardCancelBtn" class="danger">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Partner / Background Search Modal -->
+  <div id="partnerModal" class="modal hidden">
+    <div class="modal-box modal-box--sm">
+      <h3>⚔️ Partner / Background</h3>
+      <p class="cmd-modal-text">Busque uma criatura com Partner ou um encantamento Background.</p>
+      <div class="db-form" style="margin-top:0.5rem">
+        <input type="text" id="partnerInput" class="adv-input" placeholder="Nome do card..." autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button id="partnerSearchBtn">Buscar</button>
+        <button id="partnerCancelBtn" class="btn-secondary">Cancelar</button>
+      </div>
+      <div id="partnerResult" class="partner-result hidden"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
