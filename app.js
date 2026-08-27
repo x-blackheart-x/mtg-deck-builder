@@ -2,12 +2,70 @@
 const SUPABASE_URL = 'https://qwqnklrfcakfozfjhbcd.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cW5rbHJmY2FrZm96ZmpoYmNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0OTc5NTgsImV4cCI6MjEwMzA3Mzk1OH0.ihHAuzN95cLFJhd4LImug-usJyW9sI3_1hv6-Ve4e4U';
 
-// Lightweight REST helpers (no SDK needed)
+// Sessão do usuário autenticado
+let sbSession = null;
+
+/** Retorna o token JWT ativo (sessão ou anon key como fallback) */
+function sbToken() {
+  return sbSession?.access_token || SUPABASE_KEY;
+}
+
+/** Retorna o user_id do usuário logado */
+function sbUserId() {
+  return sbSession?.user?.id || null;
+}
+
+// ── Supabase Auth ─────────────────────────────────────────────
+
+async function sbSignUp(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || data.error_description || 'Erro ao criar conta');
+  return data;
+}
+
+async function sbSignIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Email ou senha incorretos');
+  return data; // { access_token, refresh_token, user, ... }
+}
+
+async function sbSignOut() {
+  if (!sbSession) return;
+  await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbToken()}` },
+  });
+  sbSession = null;
+  localStorage.removeItem('sb_session');
+}
+
+async function sbRefreshSession(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// ── REST helpers (usam token da sessão) ───────────────────────
+
 async function sbSelect(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': `Bearer ${sbToken()}`,
     },
   });
   if (!res.ok) throw new Error((await res.json()).message || `Supabase error ${res.status}`);
@@ -19,7 +77,7 @@ async function sbInsert(table, body) {
     method: 'POST',
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': `Bearer ${sbToken()}`,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
     },
@@ -34,7 +92,7 @@ async function sbDelete(table, query) {
     method: 'DELETE',
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': `Bearer ${sbToken()}`,
     },
   });
   if (!res.ok) throw new Error((await res.json()).message || `Supabase error ${res.status}`);
@@ -1224,6 +1282,7 @@ async function persistDeck(userName, deckName) {
       user_name:  userName,
       deck_name:  deckName,
       commander:  commanderJson,
+      user_id:    sbUserId(),
     }]);
     currentDeckId = rows[0].id;
   }
@@ -1237,6 +1296,7 @@ async function persistDeck(userName, deckName) {
     card_print:  getScryfallCardUrl(entry.card),
     card_value:  entry.card._cheapestBrl ?? null,
     quantity:    entry.qty,
+    user_id:     sbUserId(),
   }));
 
   if (cardRows.length > 0) {
@@ -1671,3 +1731,152 @@ async function fetchDeckPrices() {
 
   updateDeckTotalValue();
 }
+
+// ── Auth UI ───────────────────────────────────────────────────
+const authModal          = document.getElementById('authModal');
+const authTabLogin       = document.getElementById('authTabLogin');
+const authTabRegister    = document.getElementById('authTabRegister');
+const authLoginForm      = document.getElementById('authLoginForm');
+const authRegisterForm   = document.getElementById('authRegisterForm');
+const authLoginEmail     = document.getElementById('authLoginEmail');
+const authLoginPassword  = document.getElementById('authLoginPassword');
+const authLoginError     = document.getElementById('authLoginError');
+const authRegEmail       = document.getElementById('authRegEmail');
+const authRegPassword    = document.getElementById('authRegPassword');
+const authRegPasswordConfirm = document.getElementById('authRegPasswordConfirm');
+const authRegError       = document.getElementById('authRegError');
+const authSuccess        = document.getElementById('authSuccess');
+const userBar            = document.getElementById('userBar');
+const userEmail          = document.getElementById('userEmail');
+const logoutBtn          = document.getElementById('logoutBtn');
+
+// Alterna entre abas login/cadastro
+authTabLogin.addEventListener('click', () => {
+  authTabLogin.classList.add('active');
+  authTabRegister.classList.remove('active');
+  authLoginForm.classList.remove('hidden');
+  authRegisterForm.classList.add('hidden');
+  authSuccess.classList.add('hidden');
+  authLoginError.classList.add('hidden');
+});
+
+authTabRegister.addEventListener('click', () => {
+  authTabRegister.classList.add('active');
+  authTabLogin.classList.remove('active');
+  authRegisterForm.classList.remove('hidden');
+  authLoginForm.classList.add('hidden');
+  authSuccess.classList.add('hidden');
+  authRegError.classList.add('hidden');
+});
+
+// Login
+authLoginForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('authLoginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Entrando…';
+  authLoginError.classList.add('hidden');
+
+  try {
+    const session = await sbSignIn(authLoginEmail.value.trim(), authLoginPassword.value);
+    applySession(session);
+  } catch (err) {
+    authLoginError.textContent = err.message;
+    authLoginError.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+
+// Cadastro
+authRegisterForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  authRegError.classList.add('hidden');
+  authSuccess.classList.add('hidden');
+
+  if (authRegPassword.value !== authRegPasswordConfirm.value) {
+    authRegError.textContent = 'As senhas não coincidem.';
+    authRegError.classList.remove('hidden');
+    return;
+  }
+  if (authRegPassword.value.length < 6) {
+    authRegError.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+    authRegError.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('authRegisterBtn');
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
+
+  try {
+    await sbSignUp(authRegEmail.value.trim(), authRegPassword.value);
+    authSuccess.textContent = '✓ Conta criada! Verifique seu email para confirmar, depois faça login.';
+    authSuccess.classList.remove('hidden');
+    authRegisterForm.reset();
+  } catch (err) {
+    authRegError.textContent = err.message;
+    authRegError.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Criar conta';
+  }
+});
+
+// Logout
+logoutBtn.addEventListener('click', async () => {
+  await sbSignOut();
+  userBar.classList.add('hidden');
+  authModal.classList.remove('hidden');
+  clearDeckState();
+});
+
+/** Aplica a sessão recebida do login — esconde modal, mostra app */
+function applySession(session) {
+  sbSession = session;
+  localStorage.setItem('sb_session', JSON.stringify(session));
+  authModal.classList.add('hidden');
+  userBar.classList.remove('hidden');
+  userEmail.textContent = session.user?.email || '';
+}
+
+/** Tenta restaurar sessão salva no localStorage ao carregar a página */
+async function initAuth() {
+  const stored = localStorage.getItem('sb_session');
+  if (!stored) {
+    // Sem sessão — mostra modal de login
+    authModal.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const session = JSON.parse(stored);
+    // Verifica se o token ainda é válido (exp em segundos)
+    const exp = session.expires_at || (JSON.parse(atob(session.access_token.split('.')[1])).exp);
+    const now  = Math.floor(Date.now() / 1000);
+
+    if (exp > now + 60) {
+      // Token ainda válido
+      applySession(session);
+    } else if (session.refresh_token) {
+      // Token expirado — tenta renovar
+      const refreshed = await sbRefreshSession(session.refresh_token);
+      if (refreshed?.access_token) {
+        applySession(refreshed);
+      } else {
+        localStorage.removeItem('sb_session');
+        authModal.classList.remove('hidden');
+      }
+    } else {
+      localStorage.removeItem('sb_session');
+      authModal.classList.remove('hidden');
+    }
+  } catch {
+    localStorage.removeItem('sb_session');
+    authModal.classList.remove('hidden');
+  }
+}
+
+// Inicia o fluxo de autenticação ao carregar a página
+initAuth();

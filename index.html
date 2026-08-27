@@ -8,6 +8,44 @@
 </head>
 <body>
 
+  <!-- Auth Modal (shown before everything else) -->
+  <div id="authModal" class="modal auth-modal">
+    <div class="modal-box modal-box--auth">
+      <div class="auth-logo">⚔️</div>
+      <h2 class="auth-title">MTG Deck Builder</h2>
+
+      <!-- Tab bar -->
+      <div class="auth-tabs">
+        <button id="authTabLogin"    class="auth-tab active">Entrar</button>
+        <button id="authTabRegister" class="auth-tab">Criar conta</button>
+      </div>
+
+      <!-- Login form -->
+      <form id="authLoginForm" class="auth-form">
+        <label class="db-label">Email</label>
+        <input type="email" id="authLoginEmail" class="adv-input" placeholder="seu@email.com" autocomplete="email" required />
+        <label class="db-label">Senha</label>
+        <input type="password" id="authLoginPassword" class="adv-input" placeholder="Sua senha" autocomplete="current-password" required />
+        <p id="authLoginError" class="auth-error hidden"></p>
+        <button type="submit" id="authLoginBtn">Entrar</button>
+      </form>
+
+      <!-- Register form (hidden by default) -->
+      <form id="authRegisterForm" class="auth-form hidden">
+        <label class="db-label">Email</label>
+        <input type="email" id="authRegEmail" class="adv-input" placeholder="seu@email.com" autocomplete="email" required />
+        <label class="db-label">Senha</label>
+        <input type="password" id="authRegPassword" class="adv-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required />
+        <label class="db-label">Confirmar senha</label>
+        <input type="password" id="authRegPasswordConfirm" class="adv-input" placeholder="Repita a senha" autocomplete="new-password" required />
+        <p id="authRegError" class="auth-error hidden"></p>
+        <button type="submit" id="authRegisterBtn">Criar conta</button>
+      </form>
+
+      <p id="authSuccess" class="auth-success hidden"></p>
+    </div>
+  </div>
+
   <header>
     <div class="header-inner">
       <h1>⚔️ MTG Commander Deck Builder</h1>
@@ -23,6 +61,11 @@
         <div id="commanderColors" class="commander-colors"></div>
       </div>
       <button id="clearCommanderBtn" class="btn-ghost" title="Remove commander">✕</button>
+    </div>
+    <!-- User bar -->
+    <div id="userBar" class="user-bar hidden">
+      <span id="userEmail" class="user-email"></span>
+      <button id="logoutBtn" class="btn-ghost">Sair</button>
     </div>
   </header>
 
